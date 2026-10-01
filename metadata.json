@@ -1,0 +1,6 @@
+{
+  "name": "VnExpress Auto-Tagging System",
+  "description": "Hệ thống trích xuất và đề xuất Tag chuẩn SEO tự động cho báo điện tử VnExpress theo tiêu chí Search Volume, Lịch sử View và quy tắc chuyên mục.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
