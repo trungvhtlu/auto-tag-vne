@@ -130,34 +130,40 @@ export const AutoTagger: React.FC<AutoTaggerProps> = ({ onSaveToSamples, prefill
       if (data.title) setTitle(data.title);
       if (data.content) setContent(data.content);
 
-      // Auto detect category from extracted text
-      const lower = ((data.title || '') + ' ' + (data.content || '')).toLowerCase();
-      let detectedCat = 'Thời sự';
-      if (lower.includes('cháy') || lower.includes('hỏa hoạn') || lower.includes('tai nạn') || lower.includes('ùn tắc')) {
+      // Prioritize extracted category from breadcrumb <ul class="breadcrumb"><li><a>...</a></li></ul>
+      let detectedCat = data.category || '';
+      
+      if (!detectedCat) {
+        // Fallback: detect category from extracted text
+        const lower = ((data.title || '') + ' ' + (data.content || '')).toLowerCase();
         detectedCat = 'Thời sự';
-      } else if (lower.includes('giết') || lower.includes('án mạng') || lower.includes('truy bắt') || lower.includes('khởi tố') || lower.includes('công an')) {
-        detectedCat = 'Pháp luật';
-      } else if (lower.includes('du lịch') || lower.includes('bà nà') || lower.includes('khách sạn') || lower.includes('resort')) {
-        detectedCat = 'Du lịch';
-      } else if (lower.includes('vàng') || lower.includes('chứng khoán') || lower.includes('ngân hàng') || lower.includes('doanh nghiệp')) {
-        detectedCat = 'Kinh doanh';
-      } else if (lower.includes('bất động sản') || lower.includes('chung cư') || lower.includes('đất nền')) {
-        detectedCat = 'Bất động sản';
-      } else if (lower.includes('xe máy') || lower.includes('ô tô') || lower.includes('vinfast')) {
-        detectedCat = 'Xe';
-      } else if (lower.includes('sức khỏe') || lower.includes('bệnh viện') || lower.includes('bác sĩ')) {
-        detectedCat = 'Sức khỏe';
-      } else if (lower.includes('công nghệ') || lower.includes('ai') || lower.includes('khoa học')) {
-        detectedCat = 'Khoa học công nghệ';
-      } else if (lower.includes('bóng đá') || lower.includes('thể thao')) {
-        detectedCat = 'Thể thao';
-      } else if (lower.includes('ca sĩ') || lower.includes('phim') || lower.includes('hoa hậu') || lower.includes('giải trí')) {
-        detectedCat = 'Giải trí';
-      } else if (lower.includes('thế giới') || lower.includes('quốc tế')) {
-        detectedCat = 'Thế giới';
-      } else if (lower.includes('giáo dục') || lower.includes('đại học') || lower.includes('thi cử')) {
-        detectedCat = 'Giáo dục';
+        if (lower.includes('cháy') || lower.includes('hỏa hoạn') || lower.includes('tai nạn') || lower.includes('ùn tắc')) {
+          detectedCat = 'Thời sự';
+        } else if (lower.includes('giết') || lower.includes('án mạng') || lower.includes('truy bắt') || lower.includes('khởi tố') || lower.includes('công an')) {
+          detectedCat = 'Pháp luật';
+        } else if (lower.includes('du lịch') || lower.includes('bà nà') || lower.includes('khách sạn') || lower.includes('resort')) {
+          detectedCat = 'Du lịch';
+        } else if (lower.includes('vàng') || lower.includes('chứng khoán') || lower.includes('ngân hàng') || lower.includes('doanh nghiệp')) {
+          detectedCat = 'Kinh doanh';
+        } else if (lower.includes('bất động sản') || lower.includes('chung cư') || lower.includes('đất nền')) {
+          detectedCat = 'Bất động sản';
+        } else if (lower.includes('xe máy') || lower.includes('ô tô') || lower.includes('vinfast')) {
+          detectedCat = 'Xe';
+        } else if (lower.includes('sức khỏe') || lower.includes('bệnh viện') || lower.includes('bác sĩ')) {
+          detectedCat = 'Sức khỏe';
+        } else if (lower.includes('công nghệ') || lower.includes('ai') || lower.includes('khoa học')) {
+          detectedCat = 'Khoa học công nghệ';
+        } else if (lower.includes('bóng đá') || lower.includes('thể thao')) {
+          detectedCat = 'Thể thao';
+        } else if (lower.includes('ca sĩ') || lower.includes('phim') || lower.includes('hoa hậu') || lower.includes('giải trí')) {
+          detectedCat = 'Giải trí';
+        } else if (lower.includes('thế giới') || lower.includes('quốc tế')) {
+          detectedCat = 'Thế giới';
+        } else if (lower.includes('giáo dục') || lower.includes('đại học') || lower.includes('thi cử')) {
+          detectedCat = 'Giáo dục';
+        }
       }
+
       setSelectedCategory(detectedCat);
       setCurrentCategory(detectedCat);
     } catch (err: any) {

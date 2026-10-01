@@ -62,32 +62,37 @@ export const SampleManager: React.FC<SampleManagerProps> = ({ onSaveSample, onVi
       setTitle(data.title || '');
       setContent(data.content || '');
       
-      // Auto detect category from VnExpress standard categories
-      const lower = ((data.title || '') + ' ' + (data.content || '')).toLowerCase();
-      if (lower.includes('cháy') || lower.includes('hỏa hoạn') || lower.includes('tai nạn') || lower.includes('ùn tắc')) {
-        setCategory('Thời sự');
-      } else if (lower.includes('giết') || lower.includes('án mạng') || lower.includes('truy bắt') || lower.includes('khởi tố') || lower.includes('tòa án')) {
-        setCategory('Pháp luật');
-      } else if (lower.includes('du lịch') || lower.includes('bà nà') || lower.includes('tour') || lower.includes('khách sạn') || lower.includes('resort')) {
-        setCategory('Du lịch');
-      } else if (lower.includes('vàng') || lower.includes('chứng khoán') || lower.includes('doanh nghiệp') || lower.includes('lãi suất') || lower.includes('ngân hàng')) {
-        setCategory('Kinh doanh');
-      } else if (lower.includes('bất động sản') || lower.includes('chung cư') || lower.includes('đất nền') || lower.includes('nhà ở')) {
-        setCategory('Bất động sản');
-      } else if (lower.includes('xe máy') || lower.includes('ô tô') || lower.includes('xe điện') || lower.includes('vinfast')) {
-        setCategory('Xe');
-      } else if (lower.includes('sức khỏe') || lower.includes('bệnh viện') || lower.includes('bác sĩ') || lower.includes('dược')) {
-        setCategory('Sức khỏe');
-      } else if (lower.includes('ai') || lower.includes('công nghệ') || lower.includes('smartphone') || lower.includes('khoa học')) {
-        setCategory('Khoa học công nghệ');
-      } else if (lower.includes('bóng đá') || lower.includes('thể thao') || lower.includes('v-league')) {
-        setCategory('Thể thao');
-      } else if (lower.includes('ca sĩ') || lower.includes('phim') || lower.includes('hoa hậu') || lower.includes('giải trí')) {
-        setCategory('Giải trí');
-      } else if (lower.includes('thế giới') || lower.includes('nga') || lower.includes('mỹ') || lower.includes('ukraine')) {
-        setCategory('Thế giới');
-      } else if (lower.includes('giáo dục') || lower.includes('học sinh') || lower.includes('đại học') || lower.includes('thi cử')) {
-        setCategory('Giáo dục');
+      // Prioritize extracted category from breadcrumb <ul class="breadcrumb"><li><a>...</a></li></ul>
+      if (data.category) {
+        setCategory(data.category);
+      } else {
+        // Fallback auto detect category from text
+        const lower = ((data.title || '') + ' ' + (data.content || '')).toLowerCase();
+        if (lower.includes('cháy') || lower.includes('hỏa hoạn') || lower.includes('tai nạn') || lower.includes('ùn tắc')) {
+          setCategory('Thời sự');
+        } else if (lower.includes('giết') || lower.includes('án mạng') || lower.includes('truy bắt') || lower.includes('khởi tố') || lower.includes('tòa án')) {
+          setCategory('Pháp luật');
+        } else if (lower.includes('du lịch') || lower.includes('bà nà') || lower.includes('tour') || lower.includes('khách sạn') || lower.includes('resort')) {
+          setCategory('Du lịch');
+        } else if (lower.includes('vàng') || lower.includes('chứng khoán') || lower.includes('doanh nghiệp') || lower.includes('lãi suất') || lower.includes('ngân hàng')) {
+          setCategory('Kinh doanh');
+        } else if (lower.includes('bất động sản') || lower.includes('chung cư') || lower.includes('đất nền') || lower.includes('nhà ở')) {
+          setCategory('Bất động sản');
+        } else if (lower.includes('xe máy') || lower.includes('ô tô') || lower.includes('xe điện') || lower.includes('vinfast')) {
+          setCategory('Xe');
+        } else if (lower.includes('sức khỏe') || lower.includes('bệnh viện') || lower.includes('bác sĩ') || lower.includes('dược')) {
+          setCategory('Sức khỏe');
+        } else if (lower.includes('ai') || lower.includes('công nghệ') || lower.includes('smartphone') || lower.includes('khoa học')) {
+          setCategory('Khoa học công nghệ');
+        } else if (lower.includes('bóng đá') || lower.includes('thể thao') || lower.includes('v-league')) {
+          setCategory('Thể thao');
+        } else if (lower.includes('ca sĩ') || lower.includes('phim') || lower.includes('hoa hậu') || lower.includes('giải trí')) {
+          setCategory('Giải trí');
+        } else if (lower.includes('thế giới') || lower.includes('nga') || lower.includes('mỹ') || lower.includes('ukraine')) {
+          setCategory('Thế giới');
+        } else if (lower.includes('giáo dục') || lower.includes('học sinh') || lower.includes('đại học') || lower.includes('thi cử')) {
+          setCategory('Giáo dục');
+        }
       }
 
       setStatusMsg({ 

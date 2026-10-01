@@ -72,7 +72,8 @@ function saveSampleTags(samples: SampleArticle[]) {
   try {
     fs.writeFileSync(SAMPLE_JSON_PATH, JSON.stringify(samples, null, 2), 'utf-8');
     
-    // Sync CSV file
+    // Sync CSV/Sheet file with UTF-8 BOM for Microsoft Excel & Google Sheets compatibility
+    const bom = '\uFEFF';
     const header = '#,URL,Title,Tag,Lý do tag\n';
     const rows = samples.map((s, index) => {
       const id = index + 1;
@@ -82,7 +83,7 @@ function saveSampleTags(samples: SampleArticle[]) {
       const reasonsStr = `"${s.tags.map(t => `${t.tag}: ${t.reason}`).join('; ').replace(/"/g, '""')}"`;
       return `${id},${url},${title},${tagsStr},${reasonsStr}`;
     });
-    fs.writeFileSync(SAMPLE_CSV_PATH, header + rows.join('\n'), 'utf-8');
+    fs.writeFileSync(SAMPLE_CSV_PATH, bom + header + rows.join('\n'), 'utf-8');
   } catch (err) {
     console.error('Error writing sample tags:', err);
   }
@@ -160,6 +161,40 @@ app.post('/api/extract-article', async (req, res) => {
     const description = $('p.description').text().trim() ||
                         $('meta[property="og:description"]').attr('content') || '';
 
+    // Extract Category from the first <li> of breadcrumb (VnExpress Standard HTML)
+    // Structure: <ul class="breadcrumb"><li><a ...>Thế giới</a></li>...</ul>
+    let category = '';
+    const breadcrumbFirstLi = $('ul.breadcrumb li, .breadcrumb li').first();
+    if (breadcrumbFirstLi.length > 0) {
+      category = breadcrumbFirstLi.find('a').first().text().trim() || breadcrumbFirstLi.text().trim();
+    }
+
+    if (!category) {
+      const fallbackLi = $('.header-content ul.breadcrumb > li, ul.breadcrumb > li').first();
+      category = fallbackLi.find('a').first().text().trim() || fallbackLi.text().trim();
+    }
+
+    if (!category) {
+      category = $('meta[name="tt_category"]').attr('content')?.trim() ||
+                 $('meta[property="article:section"]').attr('content')?.trim() || '';
+    }
+
+    category = category.replace(/\s+/g, ' ').trim();
+
+    // Map or normalize to official VnExpress standard categories if matched
+    const VNEXPRESS_STD_CATEGORIES = [
+      'VnE-GO', 'Thời sự', 'Thế giới', 'Kinh doanh', 'Khoa học công nghệ',
+      'Góc nhìn', 'Spotlight', 'Bất động sản', 'Sức khỏe', 'Giải trí',
+      'Thể thao', 'Pháp luật', 'Giáo dục', 'Đời sống', 'Xe', 'Du lịch',
+      'Ảnh', 'Infographic', 'Ý kiến', 'Tâm sự', 'Thư giãn',
+    ];
+    if (category) {
+      const matched = VNEXPRESS_STD_CATEGORIES.find(c => c.toLowerCase() === category.toLowerCase());
+      if (matched) {
+        category = matched;
+      }
+    }
+
     // Remove unwanted elements inside article body
     $('article.fck_detail, .fck_detail, article.content-detail')
       .find('script, style, noscript, .box-related, .box-category, .box-author, .fig-author, .list-news-related, .banner, .box-comment')
@@ -190,6 +225,7 @@ app.post('/api/extract-article', async (req, res) => {
       url,
       title,
       description,
+      category,
       content,
     });
   } catch (err: any) {
@@ -851,12 +887,62 @@ app.delete('/api/sample-tags/:id', (req, res) => {
 });
 
 app.get('/api/sample-tags/export-csv', (req, res) => {
+  const samples = loadSampleTags();
+  saveSampleTags(samples); // Re-sync with BOM
   if (!fs.existsSync(SAMPLE_CSV_PATH)) {
     return res.status(404).send('Chưa có file CSV mẫu.');
   }
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="Cac_bai_tag_mau_VnExpress.csv"');
   fs.createReadStream(SAMPLE_CSV_PATH).pipe(res);
+});
+
+// Explicit Sync all sample articles into the standard Sheet file
+app.post('/api/sample-tags/sync-sheet', (req, res) => {
+  try {
+    const samples = loadSampleTags();
+    saveSampleTags(samples);
+
+    // Build TSV format (ideal for Google Sheets Ctrl+V paste)
+    const tsvHeader = '#\tURL\tTitle\tTag\tLý do tag\n';
+    const tsvRows = samples.map((s, index) => {
+      const id = index + 1;
+      const url = s.url || '';
+      const title = (s.title || '').replace(/\t|\r|\n/g, ' ');
+      const tagsStr = s.tags.map(t => t.tag).join('; ');
+      const reasonsStr = s.tags.map(t => `${t.tag}: ${t.reason}`).join('; ').replace(/\t|\r|\n/g, ' ');
+      return `${id}\t${url}\t${title}\t${tagsStr}\t${reasonsStr}`;
+    });
+    const tsvContent = tsvHeader + tsvRows.join('\n');
+
+    return res.json({
+      success: true,
+      totalCount: samples.length,
+      columns: ['#', 'URL', 'Title', 'Tag', 'Lý do tag'],
+      filePath: 'data/sample_tags.csv',
+      tsvContent,
+      syncedAt: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.error('Error syncing sheet:', err);
+    return res.status(500).json({ error: 'Lỗi khi đồng bộ file sheet: ' + err.message });
+  }
+});
+
+// Sheet TSV for Google Sheets copy
+app.get('/api/sample-tags/sheet-tsv', (req, res) => {
+  const samples = loadSampleTags();
+  const tsvHeader = '#\tURL\tTitle\tTag\tLý do tag\n';
+  const tsvRows = samples.map((s, index) => {
+    const id = index + 1;
+    const url = s.url || '';
+    const title = (s.title || '').replace(/\t|\r|\n/g, ' ');
+    const tagsStr = s.tags.map(t => t.tag).join('; ');
+    const reasonsStr = s.tags.map(t => `${t.tag}: ${t.reason}`).join('; ').replace(/\t|\r|\n/g, ' ');
+    return `${id}\t${url}\t${title}\t${tagsStr}\t${reasonsStr}`;
+  });
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.send(tsvHeader + tsvRows.join('\n'));
 });
 
 // 4. Tax/Tag Metrics endpoints (Chỉ số Tax/Tag trong 2 năm qua)
